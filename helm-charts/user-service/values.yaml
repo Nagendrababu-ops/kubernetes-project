@@ -1,0 +1,43 @@
+replicaCount: 2
+
+image:
+  repository: your-dockerhub-username/user-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+config:
+  dbUrl: jdbc:postgresql://postgres-service:5432/userdb
+
+secrets:
+  dbUser: postgres
+  dbPassword: postgres
+  jwtSecret: your_jwt_secret_key
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - host: user.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+pvc:
+  enabled: true
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+
