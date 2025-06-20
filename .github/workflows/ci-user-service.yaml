@@ -1,0 +1,46 @@
+name: CI - User Service
+
+on:
+  push:
+    paths:
+      - 'microservices/user-service/**'
+      - '.github/workflows/ci-user-service.yaml'
+  pull_request:
+    paths:
+      - 'microservices/user-service/**'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: microservices/user-service
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Build with Maven
+      run: mvn clean package -DskipTests
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push Docker image
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/user-service:latest .
+        docker push ${{ secrets.DOCKER_USERNAME }}/user-service:latest
+
