@@ -17,13 +17,15 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t your-dockerhub-username/user-service:${{ github.sha }} microservices/user-service
-          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u your-dockerhub-username --password-stdin
-          docker push your-dockerhub-username/user-service:${{ github.sha }}
+          docker build -t docker479/user-service:${{ github.sha }} microservices/user-service
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u docker479 --password-stdin
+          docker push docker479/user-service:${{ github.sha }}
 
       - name: Deploy with Helm
         run: |
           helm upgrade --install user-service ./helm-charts/user-service \
             --namespace user \
-            --set image.repository=your-dockerhub-username/user-service \
-            --set image.tag=${{ github.sha }}
+            --create-namespace \
+            --set image.repository=${{ secrets.DOCKERHUB_USERNAME }}/user-service \
+            --set image.tag=latest \
+            --set imagePullSecret=regcred
