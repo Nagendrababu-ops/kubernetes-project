@@ -77,7 +77,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Testing (optional) -->
+        <!-- Testing(optional) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
