@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: your-dockerhub-username/user-service
+  repository: docker479/user-service
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -22,7 +22,7 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: nginx
   hosts:
-    - host: user.example.com
+    - host: user.127.0.0.1.nip.io
       paths:
         - path: /
           pathType: Prefix
