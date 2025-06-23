@@ -40,4 +40,5 @@ pvc:
   accessModes:
     - ReadWriteOnce
   size: 1Gi
-
+imagePullSecrets:
+  - name: regcred
