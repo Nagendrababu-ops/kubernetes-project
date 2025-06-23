@@ -16,7 +16,10 @@ secrets:
   dbUser: postgres
   dbPassword: postgres
   jwtSecret: your_jwt_secret_key
-
+  
+imagePullSecrets:
+  - name: regcred
+  
 ingress:
   enabled: true
   annotations:
@@ -40,5 +43,3 @@ pvc:
   accessModes:
     - ReadWriteOnce
   size: 1Gi
-imagePullSecrets:
-  - name: regcred
