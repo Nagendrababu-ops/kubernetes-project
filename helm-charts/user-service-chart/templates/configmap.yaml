@@ -4,3 +4,4 @@ metadata:
   name: {{ .Release.Name }}-config
 data:
   db-url: {{ .Values.config.dbUrl }}
+  jwt-expiration: {{ .Values.jwt.expiration | quote }}
