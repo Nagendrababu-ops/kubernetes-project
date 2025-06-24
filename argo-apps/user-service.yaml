@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/Nagendrababu-ops/kubernetes-project
     targetRevision: HEAD
-    path: helm-charts/user-service
+    path: helm-charts/user-service-chart
     helm:
       valueFiles:
         - values.yaml
