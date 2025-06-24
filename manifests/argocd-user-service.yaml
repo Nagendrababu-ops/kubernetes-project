@@ -1,4 +1,3 @@
-# manifests/argocd-user-service.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -7,9 +6,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/Nagendrababu-ops/kubernetes-project.git
-    targetRevision: main
-    path: helm-charts/user-service
+    repoURL: https://github.com/Nagendrababu-ops/kubernetes-project
+    targetRevision: HEAD
+    path: helm-charts/user-service-chart
+    helm:
+      valueFiles:
+        - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: user
@@ -17,4 +19,3 @@ spec:
     automated:
       prune: true
       selfHeal: true
-
