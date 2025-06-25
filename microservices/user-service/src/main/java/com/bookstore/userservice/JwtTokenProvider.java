@@ -58,7 +58,7 @@ public class JwtTokenProvider {
                         .putDataItem(secretKey, encoded)
                         .type("Opaque");
 
-                api.createNamespacedSecret(namespace, newSecret, null, null, null);
+                api.createNamespacedSecret(namespace, newSecret, null, null, null, null);
                 System.out.println("✨ Generated new JWT key and stored it in Kubernetes Secret.");
             }
         } catch (Exception ex) {
