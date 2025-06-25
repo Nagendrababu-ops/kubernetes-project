@@ -4,32 +4,66 @@ import java.security.Key;
 import java.sql.Date;
 import java.util.Base64;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import javax.annotation.PostConstruct;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 
-import jakarta.annotation.PostConstruct;
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.*;
+import io.kubernetes.client.util.Config;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}")
-    private String secret;
-
     @Value("${jwt.expiration}")
     private long validityInMs;
+
+    @Value("${jwt.k8s.secretName:user-service-secret}")
+    private String secretName;
+
+    @Value("${jwt.k8s.secretKey:jwt-secret}")
+    private String secretKey;
+
+    @Value("${jwt.k8s.namespace:user}")
+    private String namespace;
 
     private Key key;
 
     @PostConstruct
     protected void init() {
-        byte[] secretBytes = Base64.getEncoder().encode(secret.getBytes());
-        this.key = Keys.hmacShaKeyFor(secretBytes);
+        try {
+            ApiClient client = Config.defaultClient(); // uses in-cluster config
+            CoreV1Api api = new CoreV1Api(client);
+
+            V1Secret secret;
+            try {
+                secret = api.readNamespacedSecret(secretName, namespace, null);
+                byte[] decoded = Base64.getDecoder().decode(secret.getData().get(secretKey));
+                this.key = Keys.hmacShaKeyFor(decoded);
+                System.out.println("🔐 Loaded JWT key from Kubernetes Secret.");
+            } catch (Exception e) {
+                // Secret not found, generate new one
+                this.key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+                byte[] encoded = Base64.getEncoder().encode(key.getEncoded());
+
+                V1Secret newSecret = new V1Secret()
+                        .metadata(new V1ObjectMeta()
+                                .name(secretName)
+                                .namespace(namespace))
+                        .putDataItem(secretKey, encoded)
+                        .type("Opaque");
+
+                api.createNamespacedSecret(namespace, newSecret, null, null, null);
+                System.out.println("✨ Generated new JWT key and stored it in Kubernetes Secret.");
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to initialize JWT key from K8s", ex);
+        }
     }
 
     public String createToken(String username) {
@@ -66,3 +100,4 @@ public class JwtTokenProvider {
         }
     }
 }
+

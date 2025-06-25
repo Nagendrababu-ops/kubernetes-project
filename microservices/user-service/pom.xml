@@ -82,11 +82,17 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-      <dependency>
+        <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
           <version>42.6.0</version>
-      </dependency>
+        </dependency>
+       <dependency>
+          <groupId>io.kubernetes</groupId>
+          <artifactId>client-java</artifactId>
+          <version>19.0.0</version> <!-- Or latest stable -->
+       </dependency>
+
     </dependencies>
 
     <build>

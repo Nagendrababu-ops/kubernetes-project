@@ -4,8 +4,8 @@ metadata:
   name: {{ .Release.Name }}-role
 rules:
   - apiGroups: [""]
-    resources: ["pods", "services", "endpoints", "persistentvolumeclaims"]
-    verbs: ["get", "watch", "list"]
+    resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "secrets"]
+    verbs: ["get", "watch", "list", "create", "update"]
   - apiGroups: ["apps"]
     resources: ["deployments"]
     verbs: ["get", "watch", "list"]
