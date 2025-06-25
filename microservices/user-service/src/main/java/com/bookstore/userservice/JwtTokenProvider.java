@@ -9,7 +9,9 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
 import jakarta.annotation.PostConstruct;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -95,6 +97,17 @@ public class JwtTokenProvider {
                 .setExpiration(expiryDate)
                 .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(jwtSecret)), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    // NEW: Used by controller
+    public String createToken(String username) {
+        Authentication auth = new UsernamePasswordAuthenticationToken(username, null, null);
+        return generateToken(auth);
+    }
+
+    // Renamed to match usage in JwtAuthenticationFilter
+    public String getUsername(String token) {
+        return getUsernameFromJWT(token);
     }
 
     public String getUsernameFromJWT(String token) {
