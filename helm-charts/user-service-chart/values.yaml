@@ -15,7 +15,6 @@ config:
 secrets:
   dbUser: postgres
   dbPassword: postgres
-  jwtSecret: your_jwt_secret_key
   
 imagePullSecrets:
   - name: regcred
