@@ -34,11 +34,6 @@ spec:
                 secretKeyRef:
                   name: {{ .Release.Name }}-secret
                   key: db-password
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Release.Name }}-secret
-                  key: jwt-secret
             - name: JWT_EXPIRATION
               valueFrom:
                 configMapKeyRef:
