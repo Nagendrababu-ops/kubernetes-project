@@ -3,13 +3,14 @@ package com.bookstore.userservice;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.kubernetes.client.openapi.*;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import io.kubernetes.client.openapi.apis.CoreV1Api;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -23,20 +24,27 @@ import java.util.Map;
 @Component
 public class JwtTokenProvider {
 
+    @Value("${jwt.secret:}")  // will be empty string if not present
     private String jwtSecret;
+
     private final long jwtExpirationInMs = 3600000;
 
     @PostConstruct
     public void init() {
         try {
-            loadJwtSecret();
+            if (jwtSecret != null && !jwtSecret.isBlank()) {
+                System.out.println("✅ Loaded JWT secret from application.yaml.");
+            } else {
+                System.out.println("⚠️ JWT secret not found in YAML. Attempting to load from Kubernetes...");
+                loadJwtSecretFromKubernetes();
+            }
         } catch (Exception e) {
             System.err.println("❌ Failed to initialize JwtTokenProvider: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
 
-    private void loadJwtSecret() throws Exception {
+    private void loadJwtSecretFromKubernetes() throws Exception {
         String namespace = Files.readString(Path.of("/var/run/secrets/kubernetes.io/serviceaccount/namespace")).trim();
         String secretName = "user-service-jwt-secret";
 
@@ -123,3 +131,4 @@ public class JwtTokenProvider {
         }
     }
 }
+
