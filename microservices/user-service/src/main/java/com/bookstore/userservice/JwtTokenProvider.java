@@ -2,10 +2,7 @@ package com.bookstore.userservice;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import io.kubernetes.client.openapi.ApiClient;
-import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.Configuration;
-import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.*;
 import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
 import jakarta.annotation.PostConstruct;
@@ -26,44 +23,43 @@ import java.util.Map;
 public class JwtTokenProvider {
 
     private String jwtSecret;
-    private final long jwtExpirationInMs = 3600000; // 1 hour
+    private final long jwtExpirationInMs = 3600000;
 
     @PostConstruct
     public void init() {
         try {
-            ApiClient client = Config.defaultClient();
-            Configuration.setDefaultApiClient(client);
-            CoreV1Api api = new CoreV1Api(client);
+            loadJwtSecret();
+        } catch (Exception e) {
+            System.err.println("❌ Failed to initialize JwtTokenProvider: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
 
-            String namespace = Files.readString(Path.of("/var/run/secrets/kubernetes.io/serviceaccount/namespace")).trim();
-            String secretName = "user-service-jwt-secret";
+    private void loadJwtSecret() throws Exception {
+        String namespace = Files.readString(Path.of("/var/run/secrets/kubernetes.io/serviceaccount/namespace")).trim();
+        String secretName = "user-service-jwt-secret";
 
+        ApiClient client = Config.defaultClient();
+        Configuration.setDefaultApiClient(client);
+        CoreV1Api api = new CoreV1Api(client);
+
+        try {
             V1Secret existingSecret = api.readNamespacedSecret(secretName, namespace, null);
-
-            if (existingSecret.getData() == null || !existingSecret.getData().containsKey("jwt-secret")) {
-                throw new RuntimeException("❌ Secret exists but does not contain 'jwt-secret' key");
+            if (existingSecret.getData() != null && existingSecret.getData().containsKey("jwt-secret")) {
+                byte[] secretBytes = Base64.getDecoder().decode(existingSecret.getData().get("jwt-secret"));
+                this.jwtSecret = new String(secretBytes, StandardCharsets.UTF_8);
+                System.out.println("✅ Loaded JWT secret from Kubernetes secret.");
+            } else {
+                throw new RuntimeException("Secret exists but does not contain 'jwt-secret' key.");
             }
-
-            byte[] secretBytes = Base64.getDecoder().decode(existingSecret.getData().get("jwt-secret"));
-            this.jwtSecret = new String(secretBytes, StandardCharsets.UTF_8);
-
-            System.out.println("✅ Loaded JWT secret from Kubernetes secret.");
-
         } catch (ApiException e) {
             if (e.getCode() == 404) {
                 System.out.println("🔐 Secret not found. Generating new one...");
                 this.jwtSecret = generateSecret();
-                createSecretInKubernetes(this.jwtSecret);
+                createSecretInKubernetes(namespace, secretName, this.jwtSecret);
             } else {
-                System.err.println("❌ Kubernetes API error: " + e.getResponseBody());
-                throw new RuntimeException("❌ Failed to read secret from Kubernetes", e);
+                throw new RuntimeException("❌ Kubernetes API error: " + e.getResponseBody(), e);
             }
-        } catch (IOException e) {
-            System.err.println("❌ Failed to read namespace: " + e.getMessage());
-            throw new RuntimeException("❌ Failed to read namespace", e);
-        } catch (Exception e) {
-            System.err.println("❌ Unknown error during JWT init: " + e.getMessage());
-            throw new RuntimeException("❌ Failed to initialize JwtTokenProvider", e);
         }
     }
 
@@ -72,37 +68,25 @@ public class JwtTokenProvider {
         return Base64.getEncoder().encodeToString(key.getEncoded());
     }
 
-    private void createSecretInKubernetes(String secretValue) {
-        try {
-            ApiClient client = Config.defaultClient();
-            Configuration.setDefaultApiClient(client);
-            CoreV1Api api = new CoreV1Api(client);
+    private void createSecretInKubernetes(String namespace, String secretName, String secretValue) throws Exception {
+        CoreV1Api api = new CoreV1Api();
 
-            String namespace = Files.readString(Path.of("/var/run/secrets/kubernetes.io/serviceaccount/namespace")).trim();
-            String secretName = "user-service-jwt-secret";
+        Map<String, byte[]> data = Map.of(
+                "jwt-secret", Base64.getEncoder().encode(secretValue.getBytes(StandardCharsets.UTF_8))
+        );
 
-            Map<String, byte[]> data = Map.of(
-                    "jwt-secret", Base64.getEncoder().encode(secretValue.getBytes(StandardCharsets.UTF_8))
-            );
+        V1Secret secret = new V1Secret()
+                .metadata(new V1ObjectMeta().name(secretName).namespace(namespace))
+                .type("Opaque")
+                .data(data);
 
-            V1Secret secret = new V1Secret()
-                    .metadata(new V1ObjectMeta().name(secretName).namespace(namespace))
-                    .type("Opaque")
-                    .data(data);
-
-            api.createNamespacedSecret(namespace, secret, null, null, null, null);
-            System.out.println("✅ Created new JWT secret in Kubernetes.");
-
-        } catch (Exception e) {
-            System.err.println("❌ Failed to create secret in Kubernetes: " + e.getMessage());
-            throw new RuntimeException("❌ Failed to create secret in Kubernetes", e);
-        }
+        api.createNamespacedSecret(namespace, secret, null, null, null, null);
+        System.out.println("✅ Created new JWT secret in Kubernetes.");
     }
 
     public String generateToken(Authentication authentication) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
-
         return Jwts.builder()
                 .setSubject(authentication.getName())
                 .setIssuedAt(now)
@@ -117,24 +101,20 @@ public class JwtTokenProvider {
     }
 
     public String getUsername(String token) {
-        return getUsernameFromJWT(token);
-    }
-
-    public String getUsernameFromJWT(String token) {
-        Claims claims = Jwts.parserBuilder()
+        return Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(Base64.getDecoder().decode(jwtSecret)))
                 .build()
                 .parseClaimsJws(token)
-                .getBody();
-        return claims.getSubject();
+                .getBody()
+                .getSubject();
     }
 
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                .setSigningKey(Keys.hmacShaKeyFor(Base64.getDecoder().decode(jwtSecret)))
-                .build()
-                .parseClaimsJws(token);
+                    .setSigningKey(Keys.hmacShaKeyFor(Base64.getDecoder().decode(jwtSecret)))
+                    .build()
+                    .parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             System.err.println("❌ Invalid JWT: " + e.getMessage());
