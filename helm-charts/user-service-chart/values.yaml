@@ -53,5 +53,5 @@ postgresql:
     service:
       port: 5432
 jwt:
-  secret:  your_jwt_secret
+  secret:  r0zt2A61l6+9u/EjzOiNfdOzgo2F1WMAE9qD1+vY3Qc=
   expiration: "3600000"
