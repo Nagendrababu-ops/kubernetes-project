@@ -11,7 +11,6 @@ import io.kubernetes.client.util.Config;
 import jakarta.annotation.PostConstruct;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -19,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Key;
-import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
@@ -41,6 +39,11 @@ public class JwtTokenProvider {
             String secretName = "user-service-jwt-secret";
 
             V1Secret existingSecret = api.readNamespacedSecret(secretName, namespace, null);
+
+            if (existingSecret.getData() == null || !existingSecret.getData().containsKey("jwt-secret")) {
+                throw new RuntimeException("❌ Secret exists but does not contain 'jwt-secret' key");
+            }
+
             byte[] secretBytes = Base64.getDecoder().decode(existingSecret.getData().get("jwt-secret"));
             this.jwtSecret = new String(secretBytes, StandardCharsets.UTF_8);
 
@@ -52,10 +55,15 @@ public class JwtTokenProvider {
                 this.jwtSecret = generateSecret();
                 createSecretInKubernetes(this.jwtSecret);
             } else {
+                System.err.println("❌ Kubernetes API error: " + e.getResponseBody());
                 throw new RuntimeException("❌ Failed to read secret from Kubernetes", e);
             }
         } catch (IOException e) {
+            System.err.println("❌ Failed to read namespace: " + e.getMessage());
             throw new RuntimeException("❌ Failed to read namespace", e);
+        } catch (Exception e) {
+            System.err.println("❌ Unknown error during JWT init: " + e.getMessage());
+            throw new RuntimeException("❌ Failed to initialize JwtTokenProvider", e);
         }
     }
 
@@ -66,7 +74,10 @@ public class JwtTokenProvider {
 
     private void createSecretInKubernetes(String secretValue) {
         try {
-            CoreV1Api api = new CoreV1Api();
+            ApiClient client = Config.defaultClient();
+            Configuration.setDefaultApiClient(client);
+            CoreV1Api api = new CoreV1Api(client);
+
             String namespace = Files.readString(Path.of("/var/run/secrets/kubernetes.io/serviceaccount/namespace")).trim();
             String secretName = "user-service-jwt-secret";
 
@@ -83,6 +94,7 @@ public class JwtTokenProvider {
             System.out.println("✅ Created new JWT secret in Kubernetes.");
 
         } catch (Exception e) {
+            System.err.println("❌ Failed to create secret in Kubernetes: " + e.getMessage());
             throw new RuntimeException("❌ Failed to create secret in Kubernetes", e);
         }
     }
@@ -99,13 +111,11 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // NEW: Used by controller
     public String createToken(String username) {
         Authentication auth = new UsernamePasswordAuthenticationToken(username, null, null);
         return generateToken(auth);
     }
 
-    // Renamed to match usage in JwtAuthenticationFilter
     public String getUsername(String token) {
         return getUsernameFromJWT(token);
     }
