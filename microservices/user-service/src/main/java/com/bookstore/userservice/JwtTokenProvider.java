@@ -1,4 +1,4 @@
-package com.example.security.jwt;
+package com.bookstore.userservice;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
