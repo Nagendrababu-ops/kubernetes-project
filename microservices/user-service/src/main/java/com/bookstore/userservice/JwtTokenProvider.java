@@ -9,6 +9,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
