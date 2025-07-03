@@ -1,38 +1,43 @@
 package com.bookstore.userservice;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.Collections;
 
 @Entity
 @Table(name = "users")
-public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class User implements UserDetails {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(unique = true)
     private String username;
 
-    public String getUsername() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getUsername'");
-    }
-    public CharSequence getPassword() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getPassword'");
-    }
-    public void setPassword(String encode) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setPassword'");
-    }
-    public void setRole(String string) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setRole'");
+    private String password;
+
+    private String role;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.emptyList(); // Optional: implement roles/authorities
     }
 
-    // Getters and Setters
+    @Override public boolean isAccountNonExpired() { return true; }
+
+    @Override public boolean isAccountNonLocked() { return true; }
+
+    @Override public boolean isCredentialsNonExpired() { return true; }
+
+    @Override public boolean isEnabled() { return true; }
 }
 
