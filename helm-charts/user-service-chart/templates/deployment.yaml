@@ -39,6 +39,11 @@ spec:
                 configMapKeyRef:
                   name: {{ .Release.Name }}-config
                   key: jwt-expiration
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secret
+                  key: jwt-secret
           readinessProbe:
             httpGet:
               path: /actuator/health
