@@ -13,6 +13,10 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 jwt:
+<<<<<<< Updated upstream
   secret: ${JWT_SECRET}
+=======
+  secret:  dGVzdC1zZWNyZXQtZGV2L4UNAWsQcYXRpbWU=
+>>>>>>> Stashed changes
   expiration: ${JWT_EXPIRATION}
 
