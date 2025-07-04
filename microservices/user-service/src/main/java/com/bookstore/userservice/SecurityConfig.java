@@ -28,10 +28,11 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> userRepo.findByUsername(username)
-            .orElseThrow(() -> new UsernameNotFoundException("User Not Found"));
+    public UserDetailsService userDetailsService(UserRepository repo) {
+         return username -> repo.findByUsername(username)
+        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
