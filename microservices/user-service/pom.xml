@@ -92,7 +92,12 @@
           <artifactId>client-java</artifactId>
           <version>19.0.0</version> <!-- Or latest stable -->
        </dependency>
-
+      <dependency>
+         <groupId>org.projectlombok</groupId>
+         <artifactId>lombok</artifactId>
+         <version>1.18.30</version>
+         <scope>provided</scope>
+      </dependency>
     </dependencies>
 
     <build>
