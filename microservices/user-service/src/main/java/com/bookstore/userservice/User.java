@@ -9,6 +9,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 
+@AllArgsConstructor
+@Builder
+@Data
 @Entity
 @Table(name = "users")
 @Getter
