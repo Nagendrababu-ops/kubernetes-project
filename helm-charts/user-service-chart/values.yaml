@@ -3,7 +3,7 @@ replicaCount: 2
 image:
   repository: docker479/user-service
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 service:
   type: ClusterIP
