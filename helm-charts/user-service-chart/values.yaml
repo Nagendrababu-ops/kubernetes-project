@@ -10,7 +10,7 @@ service:
   port: 80
 
 config:
-  dbUrl: jdbc:postgresql://postgres-service:5432/userdb
+  dbUrl: jdbc:postgresql://user-service-postgresql:5432/userdb
 
 secrets:
   dbUser: postgres
