@@ -14,7 +14,7 @@ config:
 
 secrets:
   dbUser: postgres
-  dbPassword: postgres
+  dbPassword: "b797cH73Ke"
   
 imagePullSecrets:
   - name: regcred
